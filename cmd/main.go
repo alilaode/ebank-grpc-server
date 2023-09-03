@@ -15,7 +15,7 @@ func main() {
 	log.SetFlags(0)
 	log.SetOutput(logWriter{})
 
-	sqlDB, err := sql.Open("pgx", "postgres://postgres:root@localhost:5452/grpc?sslmode=disable")
+	sqlDB, err := sql.Open("pgx", "postgres://postgres:secret@localhost:5453/grpc?sslmode=disable")
 
 	if err != nil {
 		log.Fatalln("Can't connect database :", err)
