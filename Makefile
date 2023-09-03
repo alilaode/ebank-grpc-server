@@ -31,7 +31,7 @@ execute: clean build
 ## postgresql
 .PHONY: postgres
 postgres:
-	docker run --name ebank_grpc -p 5453:5453 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:12-alpine
+	docker run --name ebank_grpc -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:12-alpine
 
 .PHONY: createdb
 createdb:

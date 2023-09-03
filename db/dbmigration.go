@@ -6,7 +6,6 @@ import (
 
 	migrate "github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
@@ -17,8 +16,8 @@ func Migrate(conn *sql.DB) {
 	if err != nil {
 		log.Println("Database migration failed :", err)
 	}
-	m, err := migrate.NewWithDatabaseInstance("file://db/migrations", "postgres", driver)
 
+	m, err := migrate.NewWithDatabaseInstance("file://db/migrations", "postgres", driver)
 	if err != nil {
 		log.Println("Database migration failed :", err)
 	}
