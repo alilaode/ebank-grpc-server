@@ -13,7 +13,10 @@ import (
 func Migrate(conn *sql.DB) {
 	log.Println("Database migration start")
 
-	driver, _ := postgres.WithInstance(conn, &postgres.Config{})
+	driver, err := postgres.WithInstance(conn, &postgres.Config{})
+	if err != nil {
+		log.Println("Database migration failed :", err)
+	}
 	m, err := migrate.NewWithDatabaseInstance("file://db/migrations", "postgres", driver)
 
 	if err != nil {

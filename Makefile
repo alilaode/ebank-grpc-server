@@ -1,19 +1,7 @@
-.PHONY: postgres
-postgres:
-	docker run --name postgres12 -p 5453:5453 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:12-alpine
-
-.PHONY: createdb
-createdb:
-	docker exec -it postgres12 createdb --username=root --owner=root grpc
-
-.PHONY: dropdb
-dropdb:
-	docker exec -it postgres12 dropdb grpc
-
 ifeq ($(OS), Windows_NT)
-	BIN_FILENAME  := my-grpc-server.exe
+	BIN_FILENAME  := ebank-grpc-server.exe
 else
-	BIN_FILENAME  := my-grpc-server
+	BIN_FILENAME  := ebank-grpc-server
 endif
 
 .PHONY: tidy
@@ -38,3 +26,17 @@ build: clean
 .PHONY: execute
 execute: clean build
 	./bin/${BIN_FILENAME}
+
+
+## postgresql
+.PHONY: postgres
+postgres:
+	docker run --name ebank_grpc -p 5453:5453 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:12-alpine
+
+.PHONY: createdb
+createdb:
+	docker exec -it ebank_grpc createdb --username=root --owner=root grpc
+
+.PHONY: dropdb
+dropdb:
+	docker exec -it ebank_grpc dropdb grpc
