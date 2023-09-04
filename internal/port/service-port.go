@@ -1,5 +1,5 @@
 package port
 
 type BankServicePort interface {
-	FindCurrentBalance(acct string) float64
+	FindCurrentBalance(acct string) (float64, error)
 }

@@ -1,9 +1,28 @@
 package application
 
+import (
+	"log"
+
+	"github.com/alilaode/ebank-grpc-server/internal/port"
+)
+
 type BankService struct {
+	db port.BankDatabasePort
 }
 
-func (s *BankService) FindCurrentBalance(acct string) float64 {
+func NewBankService(dbPort port.BankDatabasePort) *BankService {
+	return &BankService{
+		db: dbPort,
+	}
+}
 
-	return 999
+func (s *BankService) FindCurrentBalance(acct string) (float64, error) {
+	bankAccount, err := s.db.GetBankAccountByAccountNumber(acct)
+
+	if err != nil {
+		log.Println("Error on FindCurrentBalance :", err)
+		return 0, err
+	}
+
+	return bankAccount.CurrentBalance, nil
 }
