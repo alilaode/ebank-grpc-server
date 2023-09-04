@@ -7,6 +7,7 @@ import (
 	dbmigration "github.com/alilaode/ebank-grpc-server/db"
 	_ "github.com/jackc/pgx/v5/stdlib"
 
+	mydb "github.com/alilaode/ebank-grpc-server/internal/adapter/database"
 	mygrpc "github.com/alilaode/ebank-grpc-server/internal/adapter/grpc"
 	app "github.com/alilaode/ebank-grpc-server/internal/application"
 )
@@ -23,7 +24,13 @@ func main() {
 
 	dbmigration.Migrate(sqlDB)
 
-	bs := &app.BankService{}
+	databaseAdapter, err := mydb.NewDatabaseAdapter(sqlDB)
+
+	if err != nil {
+		log.Fatalln("Can't create database adapter :", err)
+	}
+
+	bs := app.NewBankService(databaseAdapter)
 
 	grpcAdapter := mygrpc.NewGrpcAdapter(bs, 9090)
 
