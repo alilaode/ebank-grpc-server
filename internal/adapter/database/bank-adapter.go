@@ -2,6 +2,9 @@ package database
 
 import (
 	"log"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 func (a *DatabaseAdapter) GetBankAccountByAccountNumber(acct string) (BankAccountOrm, error) {
@@ -13,4 +16,22 @@ func (a *DatabaseAdapter) GetBankAccountByAccountNumber(acct string) (BankAccoun
 	}
 
 	return bankAccountOrm, nil
+}
+
+func (a *DatabaseAdapter) CreateExchangeRate(r BankExchangeRateOrm) (uuid.UUID, error) {
+	if err := a.db.Create(r).Error; err != nil {
+		return uuid.Nil, err
+	}
+
+	return r.ExchangeRateUuid, nil
+}
+
+func (a *DatabaseAdapter) GetExchangeRateAtTimestamp(fromCur string, toCur string,
+	ts time.Time) (BankExchangeRateOrm, error) {
+	var exchangeRateOrm BankExchangeRateOrm
+
+	err := a.db.First(&exchangeRateOrm, "from_currency = ? "+" AND to_currency = ? "+
+		" AND (? BETWEEN valid_from_timestamp and valid_to_timestamp)", fromCur, toCur, ts).Error
+
+	return exchangeRateOrm, err
 }
