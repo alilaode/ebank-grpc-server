@@ -35,24 +35,32 @@ func (a *GrpcAdapter) GetCurrentBalance(ctx context.Context,
 
 func (a *GrpcAdapter) FetchExchangeRates(req *bank.ExchangeRateRequest,
 	stream bank.BankService_FetchExchangeRatesServer) error {
+	context := stream.Context()
 
 	for {
-		now := time.Now().Truncate(time.Second)
-		rate, _ := a.bankService.FindExchangeRate(req.FromCurrency, req.ToCurrency, now)
+		select {
+		case <-context.Done():
+			log.Println("Client cancelled stream")
+			return nil
+		default:
+			now := time.Now().Truncate(time.Second)
+			rate, _ := a.bankService.FindExchangeRate(req.FromCurrency, req.ToCurrency, now)
 
-		stream.Send(
-			&bank.ExchangeRateResponse{
-				FromCurrency: req.FromCurrency,
-				ToCurrency:   req.ToCurrency,
-				Rate:         rate,
-				Timestamp:    now.Format(time.RFC3339),
-			},
-		)
+			stream.Send(
+				&bank.ExchangeRateResponse{
+					FromCurrency: req.FromCurrency,
+					ToCurrency:   req.ToCurrency,
+					Rate:         rate,
+					Timestamp:    now.Format(time.RFC3339),
+				},
+			)
 
-		log.Printf("Exchange rate sent to client, %v to %v : %v\n", req.FromCurrency,
-			req.ToCurrency, rate)
+			log.Printf("Exchange rate sent to client, %v to %v : %v\n", req.FromCurrency,
+				req.ToCurrency, rate)
 
-		time.Sleep(3 * time.Second)
+			time.Sleep(3 * time.Second)
 
+		}
 	}
+
 }
