@@ -6,6 +6,8 @@ github.com/alilaode/ebank-grpc-proto v0.0.3 h1:M9OUManxFLmq+eFoL3eM6xihel8GMhjAI
 github.com/alilaode/ebank-grpc-proto v0.0.3/go.mod h1:t7JdnpizLgnu4ANKQ9gNz3GTgxzLEr+9exF81QKsJB8=
 github.com/alilaode/ebank-grpc-proto v0.0.4 h1:JgRIghPiz94Bt4S0i1cMmQCiZu7TqaEnICeyBuPiZSc=
 github.com/alilaode/ebank-grpc-proto v0.0.4/go.mod h1:t7JdnpizLgnu4ANKQ9gNz3GTgxzLEr+9exF81QKsJB8=
+github.com/alilaode/ebank-grpc-proto v0.0.6 h1:H3q1irDj3J4mp4nF+DrvM8mBDtZYeIF+oD0Yr0nXZtY=
+github.com/alilaode/ebank-grpc-proto v0.0.6/go.mod h1:t7JdnpizLgnu4ANKQ9gNz3GTgxzLEr+9exF81QKsJB8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

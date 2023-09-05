@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -183,5 +184,135 @@ func (a *GrpcAdapter) SummarizeTransactions(stream bank.BankService_SummarizeTra
 		if err != nil {
 			return err
 		}
+	}
+}
+
+func currentDatetime() *datetime.DateTime {
+	now := time.Now()
+
+	return &datetime.DateTime{
+		Year:       int32(now.Year()),
+		Month:      int32(now.Month()),
+		Day:        int32(now.Day()),
+		Hours:      int32(now.Hour()),
+		Minutes:    int32(now.Minute()),
+		Seconds:    int32(now.Second()),
+		Nanos:      int32(now.Second()),
+		TimeOffset: &datetime.DateTime_UtcOffset{},
+	}
+}
+
+func (a *GrpcAdapter) TransferMultiple(stream bank.BankService_TransferMultipleServer) error {
+	context := stream.Context()
+
+	for {
+		select {
+		case <-context.Done():
+			log.Println("Client cancelled stream")
+			return nil
+		default:
+			req, err := stream.Recv()
+
+			if err == io.EOF {
+				return nil
+			}
+
+			if err != nil {
+				log.Fatalln("Error while reading from client :", err)
+			}
+
+			tt := dbank.TransferTransaction{
+				FromAccountNumber: req.FromAccountNumber,
+				ToAccountNumber:   req.ToAccountNumber,
+				Currency:          req.Currency,
+				Amount:            req.Amount,
+			}
+
+			_, transferSuccess, err := a.bankService.Transfer(tt)
+
+			if err != nil {
+				return buildTransferErrorStatusGrpc(err, *req)
+			}
+
+			res := bank.TransferResponse{
+				FromAccountNumber: req.FromAccountNumber,
+				ToAccountNumber:   req.ToAccountNumber,
+				Currency:          req.Currency,
+				Amount:            req.Amount,
+				Timestamp:         currentDatetime(),
+			}
+
+			if transferSuccess {
+				res.Status = bank.TransferStatus_TRANSFER_STATUS_SUCCESS
+			} else {
+				res.Status = bank.TransferStatus_TRANSFER_STATUS_FAILED
+			}
+
+			err = stream.Send(&res)
+
+			if err != nil {
+				log.Fatalln("Error while sending response to client :", err)
+			}
+		}
+	}
+}
+
+func buildTransferErrorStatusGrpc(err error, req bank.TransferRequest) error {
+	switch {
+	case errors.Is(err, dbank.ErrTransferSourceAccountNotFound):
+		s := status.New(codes.FailedPrecondition, err.Error())
+		s, _ = s.WithDetails(&errdetails.PreconditionFailure{
+			Violations: []*errdetails.PreconditionFailure_Violation{
+				{
+					Type:        "INVALID_ACCOUNT",
+					Subject:     "Source account not found",
+					Description: fmt.Sprintf("source account (from %v) not found", req.FromAccountNumber),
+				},
+			},
+		})
+
+		return s.Err()
+	case errors.Is(err, dbank.ErrTransferDestinationAccountNotFound):
+		s := status.New(codes.FailedPrecondition, err.Error())
+		s, _ = s.WithDetails(&errdetails.PreconditionFailure{
+			Violations: []*errdetails.PreconditionFailure_Violation{
+				{
+					Type:        "INVALID_ACCOUNT",
+					Subject:     "Destination account not found",
+					Description: fmt.Sprintf("destination account (to %v) not found", req.ToAccountNumber),
+				},
+			},
+		})
+
+		return s.Err()
+	case errors.Is(err, dbank.ErrTransferRecordFailed):
+		s := status.New(codes.Internal, err.Error())
+		s, _ = s.WithDetails(&errdetails.Help{
+			Links: []*errdetails.Help_Link{
+				{
+					Url:         "my-bank-website.com/faq",
+					Description: "Bank FAQ",
+				},
+			},
+		})
+
+		return s.Err()
+	case errors.Is(err, dbank.ErrTransferTransactionPair):
+		s := status.New(codes.InvalidArgument, err.Error())
+		s, _ = s.WithDetails(&errdetails.ErrorInfo{
+			Domain: "my-bank-website.com",
+			Reason: "TRANSACTION_PAIR_FAILED",
+			Metadata: map[string]string{
+				"from_account": req.FromAccountNumber,
+				"to_account":   req.ToAccountNumber,
+				"currency":     req.Currency,
+				"amount":       fmt.Sprintf("%f", req.Amount),
+			},
+		})
+
+		return s.Err()
+	default:
+		s := status.New(codes.Unknown, err.Error())
+		return s.Err()
 	}
 }

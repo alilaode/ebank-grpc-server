@@ -109,3 +109,75 @@ func (s *BankService) CalculateTransactionSummary(tcur *dbank.TransactionSummary
 
 	return nil
 }
+
+func (s *BankService) Transfer(tt dbank.TransferTransaction) (uuid.UUID, bool, error) {
+	now := time.Now()
+
+	fromAccountOrm, err := s.db.GetBankAccountByAccountNumber(tt.FromAccountNumber)
+
+	if err != nil {
+		log.Printf("Can't find transfer from account %v : %v\n", tt.FromAccountNumber, err)
+		return uuid.Nil, false, dbank.ErrTransferSourceAccountNotFound
+	}
+
+	if fromAccountOrm.CurrentBalance < tt.Amount {
+		return uuid.Nil, false, dbank.ErrTransferTransactionPair
+	}
+
+	toAccountOrm, err := s.db.GetBankAccountByAccountNumber(tt.ToAccountNumber)
+
+	if err != nil {
+		log.Printf("Can't find transfer to account %v : %v\n", tt.ToAccountNumber, err)
+		return uuid.Nil, false, dbank.ErrTransferDestinationAccountNotFound
+	}
+
+	fromTransactionOrm := db.BankTransactionOrm{
+		TransactionUuid:      uuid.New(),
+		TransactionTimestamp: now,
+		TransactionType:      dbank.TransactionTypeOut,
+		AccountUuid:          fromAccountOrm.AccountUuid,
+		Amount:               tt.Amount,
+		Notes:                "Transfer out to " + tt.ToAccountNumber,
+		CreatedAt:            now,
+		UpdatedAt:            now,
+	}
+
+	toTransactionOrm := db.BankTransactionOrm{
+		TransactionUuid:      uuid.New(),
+		TransactionTimestamp: now,
+		TransactionType:      dbank.TransactionTypeIn,
+		AccountUuid:          toAccountOrm.AccountUuid,
+		Amount:               tt.Amount,
+		Notes:                "Transfer in from " + tt.FromAccountNumber,
+		CreatedAt:            now,
+		UpdatedAt:            now,
+	}
+
+	// create transfer request
+	newTransferUuid := uuid.New()
+
+	transferOrm := db.BankTransferOrm{
+		TransferUuid:      newTransferUuid,
+		FromAccountUuid:   fromAccountOrm.AccountUuid,
+		ToAccountUuid:     toAccountOrm.AccountUuid,
+		Currency:          tt.Currency,
+		Amount:            tt.Amount,
+		TransferTimestamp: now,
+		TransferSuccess:   false,
+		CreatedAt:         now,
+		UpdatedAt:         now,
+	}
+
+	if _, err := s.db.CreateTransfer(transferOrm); err != nil {
+		log.Printf("Can't create transfer from %v to %v : %v\n", tt.FromAccountNumber, tt.ToAccountNumber, err)
+		return uuid.Nil, false, dbank.ErrTransferRecordFailed
+	}
+
+	if transferPairSuccess, _ := s.db.CreateTransferTransactionPair(fromAccountOrm,
+		toAccountOrm, fromTransactionOrm, toTransactionOrm); transferPairSuccess {
+		s.db.UpdateTransferStatus(transferOrm, true)
+		return newTransferUuid, true, nil
+	} else {
+		return newTransferUuid, false, dbank.ErrTransferTransactionPair
+	}
+}
