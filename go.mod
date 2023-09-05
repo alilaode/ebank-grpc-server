@@ -3,7 +3,7 @@ module github.com/alilaode/ebank-grpc-server
 go 1.21.0
 
 require (
-	github.com/alilaode/ebank-grpc-proto v0.0.3
+	github.com/alilaode/ebank-grpc-proto v0.0.4
 	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/google/uuid v1.3.1
 	github.com/jackc/pgx/v5 v5.4.3
